@@ -1,2 +1,4 @@
 ---
-# defaults file for ansgal1
+
+iptables: true #false to disable docker managed iptables rules
+install_compose: false #true to install docker-compose

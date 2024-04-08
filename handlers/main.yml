@@ -1,2 +1,4 @@
 ---
-# handlers file for ansgal1
+handlers:
+  - name: Reload docker systemd service
+    service: name=docker.service state=reloaded
