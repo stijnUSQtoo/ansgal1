@@ -1,2 +1,113 @@
 ---
-# tasks file for ansgal1
+
+# UniSQ CSC3430 dev 2024 - SD
+
+# Ensuring no locks are held by APT on the target AzLabs VM
+# Adapted from Daniel F
+
+- name: Disable timers for unattended upgrade, so that none will be triggered by the `date -s` call.
+  raw: systemctl disable --now {{item}}
+  with_items:
+    - 'apt-daily.timer'
+    - 'apt-daily-upgrade.timer'
+  become: yes
+
+- name: Reload systemctl daemon to apply the new changes
+  raw: systemctl daemon-reload
+  become: yes
+
+- name: Wait for any possibly running unattended upgrade to finish
+  raw: systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+  become: yes
+
+- name: Purge unattended upgrades
+  raw: apt-get -y purge unattended-upgrades
+  become: yes
+
+- name: Update apt cache
+  raw: apt-get -y update
+  become: yes
+
+# Adapted from 0x646e78.docker_debian
+
+- name: Install dependencies for docker-debian
+  apt:
+    name: [ 'aptitude', 'apt-transport-https', 'ca-certificates', 'gnupg2', 'software-properties-common' ]
+    state: latest
+  become: yes
+
+- name: Pip Install dependencies for docker-debian
+  pip:
+    name: [ 'docker', 'PyYAML' ]
+    executable: pip3
+    state: present
+
+- name: Pip Install docker-compose dependencies for docker-debian
+  pip:
+    name: [ 'docker-compose' ]
+    executable: pip3
+    state: present
+  when: install_compose
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+  become: yes
+
+- name: Add Docker APT repository
+  vars:
+    distro: "{{ 'stretch' if ansible_distribution_release == 'sid' else ansible_distribution_release }}"
+  apt_repository:
+    filename: "docker-ce"
+    repo: deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ distro }} stable
+  become: yes
+
+- name: Install Docker
+  apt:
+    name: [ 'docker-ce', 'docker-ce-cli', 'containerd.io' ]
+  become: yes
+
+- name: Install Docker Compose
+  apt:
+    name: [ 'docker-compose' ]
+    state: present
+  when: install_compose
+  become: yes
+
+- name: Create docker systemd service directory
+  file:
+    path: "/etc/systemd/system/docker.service.d"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  become: yes
+
+- name: Create /etc/docker/daemon.json
+  template:
+    dest: "/etc/docker/daemon.json"
+    src: daemon.json.j2
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: Reload docker systemd service
+
+- name: Create systemd override for the docker service
+  template:
+    dest: "/etc/systemd/system/docker.service.d/override.conf"
+    src: docker-override.conf.j2
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: Reload docker systemd service
+  when: not iptables
+
+- name: Start Docker if it is not running
+  systemd:
+    name: docker
+    state: started
+  become: yes
+
+# Todo: add user 'usqstudent' to docker group
