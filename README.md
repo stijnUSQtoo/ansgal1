@@ -1,31 +1,32 @@
-Role Name
+UniSQ Ansible Role install Docker CE
 =========
 
-A brief description of the role goes here.
+This is an ansible role to install docker-ce, from the official apt repo, with various options, such as installing docker-compose and disabling the docker iptables dynamic rules.
+
+The role is adapted from Galaxy Role 0x646e78.docker_debian as well as code from Daniel F.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Make sure the Ansible controller has `sshpass` installed. Then install the role on the controller using `ansible-galaxy install`, and then create a playbook and a hosts file.  Run the playbook using `ansible-playbook -u usqstudent -i hosts -kK playbookdocker.yml`.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+* `iptables: true` - Set to false to disable docker controlled iptables rules.
+* `install_compose: false` - Set to true to install docker-compose
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+None
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+- hosts: myAZlab # 'hosts' file should contain [myAZlab] lab-xxxxx-azure.com ansible_port=50xx
+  roles:
+    - { role: username.rolename, iptables: false, install_compose: true }
 
 License
 -------
@@ -35,4 +36,4 @@ BSD
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+UniSQ SD, 2024.  Based on work from 0x646e78 and Daniel F.
