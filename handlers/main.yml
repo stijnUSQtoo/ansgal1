@@ -1,4 +1,3 @@
 ---
-handlers:
-  - name: Reload docker systemd service
-    service: name=docker.service state=reloaded
+- name: Reload docker systemd service
+  service: name=docker.service state=reloaded
